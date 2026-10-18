@@ -1,0 +1,6 @@
+{
+  "name": "每日天氣預報小卡",
+  "description": "極簡美觀的毛玻璃天氣預報應用，支援自動定位、城市搜尋、即時氣象、紫外線指數、空氣品質 AQI、未來 6 小時與 5 天天氣預報及自然日夜動態背景與純 CSS 動畫圖示。",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

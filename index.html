@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>每日天氣預報小卡</title>
+  <meta name="description" content="極簡美觀的毛玻璃天氣預報應用，支援自動定位、城市搜尋、即時氣象、紫外線指數、空氣品質 AQI、未來 6 小時與 5 天天氣預報及自然日夜動態背景與純 CSS 動畫圖示。" />
+  <meta property="og:title" content="每日天氣預報小卡" />
+  <meta property="og:description" content="極簡美觀的毛玻璃天氣預報應用，支援自動定位、城市搜尋、即時氣象、紫外線指數、空氣品質 AQI、未來 6 小時與 5 天天氣預報。" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <style>
+    /* CSS Reset & Variable Setup */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-gradient: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
+      --text-main: #232c38;
+      --text-secondary: rgba(35, 44, 56, 0.8);
+      --card-bg: rgba(255, 255, 255, 0.22);
+      --card-border: rgba(255, 255, 255, 0.4);
+      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      --input-bg: rgba(255, 255, 255, 0.35);
+      --input-border: rgba(255, 255, 255, 0.5);
+      --item-hover-bg: rgba(255, 255, 255, 0.3);
+      --blur-val: 16px;
+      --font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+    }
+
+    body.theme-dark {
+      --text-main: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.8);
+      --card-bg: rgba(255, 255, 255, 0.12);
+      --card-border: rgba(255, 255, 255, 0.25);
+      --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      --input-bg: rgba(255, 255, 255, 0.15);
+      --input-border: rgba(255, 255, 255, 0.3);
+      --item-hover-bg: rgba(255, 255, 255, 0.2);
+    }
+
+    body {
+      font-family: var(--font-family);
+      min-height: 100vh;
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 48px;
+      transition: background 0.8s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Container */
+    .app-container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+
+    /* Glassmorphism Surface Base */
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(var(--blur-val));
+      -webkit-backdrop-filter: blur(var(--blur-val));
+      border-radius: 24px;
+      box-shadow: var(--card-shadow);
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+
+    /* Top Search & Location Bar */
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search-input-group {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: var(--text-secondary);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 9999px;
+      padding: 12px 16px 12px 42px;
+      font-size: 15px;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.25s ease;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.8;
+    }
+
+    .search-input:focus {
+      background: rgba(255, 255, 255, 0.4);
+      border-color: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+    }
+
+    body.theme-dark .search-input:focus {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .location-btn, .search-submit-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-main);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+    }
+
+    .location-btn:hover, .search-submit-btn:hover {
+      background: rgba(255, 255, 255, 0.45);
+      transform: scale(1.05);
+    }
+
+    .location-btn:active, .search-submit-btn:active {
+      transform: scale(0.96);
+    }
+
+    .location-btn svg, .search-submit-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Search Autocomplete Dropdown */
+    .search-results {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      display: none;
+    }
+
+    .search-results.active {
+      display: block;
+    }
+
+    .result-item {
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: background 0.15s ease;
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .result-item:hover {
+      background: var(--item-hover-bg);
+    }
+
+    .result-country {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Popular Cities Quick Bar */
+    .quick-cities {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 0 6px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .quick-cities::-webkit-scrollbar {
+      display: none;
+    }
+
+    .quick-chip {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-secondary);
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .quick-chip:hover {
+      background: rgba(255, 255, 255, 0.4);
+      color: var(--text-main);
+    }
+
+    /* Toast / Notification Notice */
+    .toast-msg {
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font-size: 13px;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      align-self: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: none;
+      animation: fadeIn 0.3s ease;
+      z-index: 40;
+    }
+
+    /* Main Weather Card */
+    .main-card {
+      text-align: center;
+      padding: 28px 20px 24px;
+      position: relative;
+    }
+
+    .location-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .city-name {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .location-indicator-icon {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .update-time {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Weather Hero (Icon & Temp) */
+    .weather-hero {
+      margin: 20px 0 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .temp-large {
+      font-size: 76px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -3px;
+      font-variant-numeric: tabular-nums;
+      margin-top: 14px;
+    }
+
+    .weather-desc {
+      font-size: 20px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .temp-range {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Secondary Metrics Grid (4 items) */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .metric-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(var(--blur-val));
+      -webkit-backdrop-filter: blur(var(--blur-val));
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .metric-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .metric-icon-box svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--text-main);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .metric-info {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .metric-value {
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    /* Section Header */
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-title svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* Hourly Forecast (6 Hours) */
+    .hourly-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+    }
+
+    .hourly-scroll::-webkit-scrollbar {
+      height: 4px;
+    }
+    .hourly-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    .hourly-item {
+      flex: 0 0 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .hourly-item:hover {
+      background: rgba(255, 255, 255, 0.22);
+      transform: translateY(-2px);
+    }
+
+    .hourly-time {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .hourly-temp {
+      font-size: 16px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin-top: 8px;
+    }
+
+    /* 5-Day Forecast (Daily) */
+    .daily-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .daily-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: background 0.2s ease;
+    }
+
+    .daily-item:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .daily-day {
+      width: 78px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .daily-condition {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .daily-temps {
+      width: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+    }
+
+    .daily-high {
+      font-weight: 700;
+    }
+
+    .daily-low {
+      color: var(--text-secondary);
+    }
+
+    /* ======================================================== */
+    /* PURE CSS ANIMATED WEATHER ICONS                          */
+    /* ======================================================== */
+
+    .weather-icon-css {
+      position: relative;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* Medium Icon (Hero) */
+    .weather-icon-css.size-lg {
+      width: 90px;
+      height: 90px;
+    }
+
+    /* Small Icon (Hourly & Daily) */
+    .weather-icon-css.size-sm {
+      width: 36px;
+      height: 36px;
+    }
+
+    /* 1. Sunny / Sun (白天晴天) */
+    .icon-sun {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 44%;
+      height: 44%;
+      margin: -22% 0 0 -22%;
+      background: #fbc02d;
+      background: radial-gradient(circle, #ffe082 0%, #ffb300 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 20px #ffb300, 0 0 40px #ffe082;
+      animation: pulseSun 3s ease-in-out infinite alternate;
+    }
+
+    .icon-sun-rays {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 80%;
+      height: 80%;
+      margin: -40% 0 0 -40%;
+      border-radius: 50%;
+      animation: rotateSun 16s linear infinite;
+    }
+
+    .icon-sun-rays::before, .icon-sun-rays::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border: 3px dashed rgba(255, 179, 0, 0.7);
+      border-radius: 50%;
+    }
+
+    .icon-sun-rays::after {
+      transform: rotate(45deg);
+    }
+
+    @keyframes rotateSun {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulseSun {
+      from { transform: scale(0.94); box-shadow: 0 0 16px #ffb300; }
+      to { transform: scale(1.06); box-shadow: 0 0 28px #ffb300; }
+    }
+
+    /* 2. Moon & Stars (夜晚晴天) */
+    .icon-moon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 46%;
+      height: 46%;
+      margin: -23% 0 0 -23%;
+      border-radius: 50%;
+      box-shadow: inset -8px -6px 0 0 #f6f1d1;
+      transform: rotate(-15deg);
+      animation: floatMoon 4s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 10px rgba(246, 241, 209, 0.5));
+    }
+
+    .weather-icon-css.size-sm .icon-moon {
+      box-shadow: inset -4px -3px 0 0 #f6f1d1;
+    }
+
+    .icon-star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle 2s ease-in-out infinite alternate;
+    }
+
+    .icon-star-1 {
+      width: 4px; height: 4px; top: 20%; right: 22%;
+      animation-delay: 0.2s;
+    }
+    .icon-star-2 {
+      width: 3px; height: 3px; bottom: 25%; left: 20%;
+      animation-delay: 0.9s;
+    }
+
+    @keyframes floatMoon {
+      0% { transform: translateY(0px) rotate(-15deg); }
+      100% { transform: translateY(-4px) rotate(-10deg); }
+    }
+
+    @keyframes twinkle {
+      0% { opacity: 0.3; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* 3. Cloud (多雲/陰天) */
+    .icon-cloud {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 60%;
+      height: 36%;
+      margin: -18% 0 0 -30%;
+      background: #eef2f5;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+      animation: floatCloud 3.5s ease-in-out infinite alternate;
+    }
+
+    .icon-cloud::before {
+      content: '';
+      position: absolute;
+      bottom: 25%;
+      left: 14%;
+      width: 46%;
+      height: 90%;
+      background: #eef2f5;
+      border-radius: 50%;
+    }
+
+    .icon-cloud::after {
+      content: '';
+      position: absolute;
+      bottom: 25%;
+      right: 14%;
+      width: 34%;
+      height: 70%;
+      background: #eef2f5;
+      border-radius: 50%;
+    }
+
+    .icon-cloud-dark {
+      background: #9aa8b6;
+    }
+    .icon-cloud-dark::before, .icon-cloud-dark::after {
+      background: #9aa8b6;
+    }
+
+    @keyframes floatCloud {
+      0% { transform: translateX(-3px); }
+      100% { transform: translateX(3px); }
+    }
+
+    /* 4. Sun Behind Cloud (晴時多雲) */
+    .icon-sun-behind-cloud .icon-sun-mini {
+      position: absolute;
+      top: 18%;
+      right: 22%;
+      width: 34%;
+      height: 34%;
+      background: radial-gradient(circle, #ffe082 0%, #ffb300 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 12px #ffb300;
+      animation: pulseSun 3s infinite alternate;
+    }
+
+    .icon-sun-behind-cloud .icon-cloud {
+      top: 56%;
+      left: 45%;
+      z-index: 2;
+    }
+
+    /* 5. Rain Drops (雨天/陣雨) */
+    .icon-rain-cloud {
+      position: absolute;
+      top: 36%;
+      left: 50%;
+      width: 62%;
+      height: 34%;
+      margin: -17% 0 0 -31%;
+      background: #8092a4;
+      border-radius: 9999px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .icon-rain-cloud::before {
+      content: '';
+      position: absolute;
+      bottom: 25%;
+      left: 14%;
+      width: 46%;
+      height: 90%;
+      background: #8092a4;
+      border-radius: 50%;
+    }
+    .icon-rain-cloud::after {
+      content: '';
+      position: absolute;
+      bottom: 25%;
+      right: 14%;
+      width: 34%;
+      height: 70%;
+      background: #8092a4;
+      border-radius: 50%;
+    }
+
+    .rain-drop {
+      position: absolute;
+      width: 2.5px;
+      height: 8px;
+      background: #64b5f6;
+      border-radius: 2px;
+      animation: dropFall 0.9s linear infinite;
+    }
+
+    .size-sm .rain-drop {
+      width: 2px;
+      height: 5px;
+    }
+
+    .drop-1 { top: 58%; left: 32%; animation-delay: 0.1s; }
+    .drop-2 { top: 58%; left: 50%; animation-delay: 0.4s; }
+    .drop-3 { top: 58%; left: 68%; animation-delay: 0.7s; }
+
+    @keyframes dropFall {
+      0% { transform: translateY(0) scaleY(1); opacity: 1; }
+      80% { transform: translateY(18px) scaleY(1.2); opacity: 0.8; }
+      100% { transform: translateY(22px) scaleY(0.4); opacity: 0; }
+    }
+
+    /* 6. Thunderstorm (雷陣雨) */
+    .lightning-bolt {
+      position: absolute;
+      bottom: 12%;
+      left: 45%;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 3px solid transparent;
+      border-top: 14px solid #ffd54f;
+      transform: rotate(-15deg);
+      animation: flashLightning 2s ease infinite;
+    }
+    .size-sm .lightning-bolt {
+      border-top-width: 9px;
+      border-left-width: 3px;
+    }
+
+    @keyframes flashLightning {
+      0%, 88%, 100% { opacity: 0; }
+      89%, 93% { opacity: 1; filter: drop-shadow(0 0 8px #ffd54f); }
+      91% { opacity: 0.2; }
+    }
+
+    /* 7. Snow (雪) */
+    .snowflake {
+      position: absolute;
+      background: #ffffff;
+      border-radius: 50%;
+      animation: snowFall 1.8s ease-in-out infinite;
+    }
+    .flake-1 { width: 4px; height: 4px; top: 60%; left: 34%; animation-delay: 0.2s; }
+    .flake-2 { width: 5px; height: 5px; top: 56%; left: 52%; animation-delay: 0.7s; }
+    .flake-3 { width: 4px; height: 4px; top: 62%; left: 70%; animation-delay: 1.1s; }
+
+    @keyframes snowFall {
+      0% { transform: translateY(0) translateX(0); opacity: 0; }
+      30% { opacity: 1; }
+      100% { transform: translateY(20px) translateX(4px); opacity: 0; }
+    }
+
+    /* Loading Overlay & Skeleton */
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 38px;
+      height: 38px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: var(--text-main);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Footer Note */
+    .app-footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      opacity: 0.75;
+    }
+
+    /* Utility animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      body {
+        padding: 16px 12px 36px;
+      }
+      .temp-large {
+        font-size: 64px;
+      }
+      .city-name {
+        font-size: 22px;
+      }
+      .metrics-grid {
+        gap: 8px;
+      }
+      .metric-item {
+        padding: 12px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Search & Geolocation Bar -->
+    <div class="search-wrapper">
+      <div class="search-input-group">
+        <svg class="search-icon" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input 
+          type="text" 
+          id="citySearchInput" 
+          class="search-input" 
+          placeholder="搜尋全球城市 (例如: 台北, 東京, 紐約)..." 
+          autocomplete="off"
+        />
+        <div id="searchResults" class="search-results"></div>
+      </div>
+
+      <button id="searchBtn" class="search-submit-btn" title="搜尋城市" aria-label="搜尋城市">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+
+      <button id="locationBtn" class="location-btn" title="取得目前位置天氣" aria-label="取得目前位置天氣">
+        <svg viewBox="0 0 24 24">
+          <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Quick City Tags -->
+    <div class="quick-cities">
+      <button class="quick-chip" data-city="台北" data-lat="25.0330" data-lon="121.5654">📍 台北</button>
+      <button class="quick-chip" data-city="台中" data-lat="24.1477" data-lon="120.6736">台中</button>
+      <button class="quick-chip" data-city="高雄" data-lat="22.6273" data-lon="120.3014">高雄</button>
+      <button class="quick-chip" data-city="東京" data-lat="35.6762" data-lon="139.6503">東京</button>
+      <button class="quick-chip" data-city="倫敦" data-lat="51.5074" data-lon="-0.1278">倫敦</button>
+      <button class="quick-chip" data-city="紐約" data-lat="40.7128" data-lon="-74.0060">紐約</button>
+      <button class="quick-chip" data-city="巴黎" data-lat="48.8566" data-lon="2.3522">巴黎</button>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastMsg" class="toast-msg"></div>
+
+    <!-- Main Content Container -->
+    <div id="weatherContent">
+
+      <!-- Loading State -->
+      <div id="loadingState" class="glass-card loading-state">
+        <div class="spinner"></div>
+        <div style="font-size: 14px; color: var(--text-secondary);">正在載入即時天氣資訊...</div>
+      </div>
+
+      <!-- Weather Data View (Initially hidden) -->
+      <div id="weatherView" style="display: none; display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- Primary Weather Card -->
+        <div class="glass-card main-card">
+          <div class="location-header">
+            <div class="city-name">
+              <svg class="location-indicator-icon" viewBox="0 0 24 24">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span id="currentCityName">台北市</span>
+            </div>
+            <div id="currentCountryText" class="update-time">台灣 · 即時天氣</div>
+          </div>
+
+          <div class="weather-hero">
+            <div id="heroWeatherIcon" class="weather-icon-css size-lg">
+              <!-- Pure CSS Icon injected here -->
+            </div>
+            <div class="temp-large"><span id="currentTemp">--</span>°</div>
+            <div id="currentWeatherDesc" class="weather-desc">晴朗</div>
+            <div class="temp-range">
+              <span>最高 <b id="todayMaxTemp">--</b>°</span>
+              <span>·</span>
+              <span>最低 <b id="todayMinTemp">--</b>°</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Metrics Grid (4 Extended Weather Details) -->
+        <div class="metrics-grid">
+          <!-- 1. UV Index -->
+          <div class="metric-item">
+            <div class="metric-icon-box">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2"></path>
+                <path d="M12 20v2"></path>
+                <path d="m4.93 4.93 1.41 1.41"></path>
+                <path d="m17.66 17.66 1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="M20 12h2"></path>
+                <path d="m6.34 17.66-1.41 1.41"></path>
+                <path d="m19.07 4.93-1.41 1.41"></path>
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">紫外線指數</span>
+              <span id="uvIndexVal" class="metric-value">--</span>
+              <span id="uvIndexLevel" class="metric-sub">中量級</span>
+            </div>
+          </div>
+
+          <!-- 2. AQI -->
+          <div class="metric-item">
+            <div class="metric-icon-box">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                <path d="M16 16v6"></path>
+                <path d="M8 12v10"></path>
+                <path d="M12 18v4"></path>
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">空氣品質 (AQI)</span>
+              <span id="aqiVal" class="metric-value">--</span>
+              <span id="aqiLevel" class="metric-sub">良好</span>
+            </div>
+          </div>
+
+          <!-- 3. Relative Humidity -->
+          <div class="metric-item">
+            <div class="metric-icon-box">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">相對濕度</span>
+              <span id="humidityVal" class="metric-value">--%</span>
+              <span id="humidityLevel" class="metric-sub">舒適</span>
+            </div>
+          </div>
+
+          <!-- 4. Wind Speed -->
+          <div class="metric-item">
+            <div class="metric-icon-box">
+              <svg viewBox="0 0 24 24">
+                <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"></path>
+                <path d="M9.6 4.6A2 2 0 1 1 11 8H2"></path>
+                <path d="M12.6 19.4A2 2 0 1 0 14 16H2"></path>
+              </svg>
+            </div>
+            <div class="metric-info">
+              <span class="metric-label">風速</span>
+              <span id="windSpeedVal" class="metric-value">-- km/h</span>
+              <span id="windLevel" class="metric-sub">微風</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6-Hour Forecast -->
+        <div class="glass-card">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            未來 6 小時預報
+          </div>
+          <div id="hourlyForecastList" class="hourly-scroll">
+            <!-- 6 hour forecast cards injected here -->
+          </div>
+        </div>
+
+        <!-- 5-Day Forecast -->
+        <div class="glass-card">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            未來 5 天天氣預報
+          </div>
+          <div id="dailyForecastList" class="daily-list">
+            <!-- 5 day forecast rows injected here -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      資料來源：Open-Meteo · 無伺服器架構 · 支援 GitHub Pages
+    </footer>
+
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    (function() {
+      // Default location: Taipei City, Taiwan
+      const DEFAULT_LOCATION = {
+        name: '台北市',
+        country: '台灣',
+        latitude: 25.0330,
+        longitude: 121.5654
+      };
+
+      let currentLocation = { ...DEFAULT_LOCATION };
+      let searchDebounceTimer = null;
+
+      // DOM Elements
+      const body = document.body;
+      const citySearchInput = document.getElementById('citySearchInput');
+      const searchBtn = document.getElementById('searchBtn');
+      const locationBtn = document.getElementById('locationBtn');
+      const searchResults = document.getElementById('searchResults');
+      const toastMsg = document.getElementById('toastMsg');
+      const loadingState = document.getElementById('loadingState');
+      const weatherView = document.getElementById('weatherView');
+
+      // Weather Elements
+      const currentCityName = document.getElementById('currentCityName');
+      const currentCountryText = document.getElementById('currentCountryText');
+      const heroWeatherIcon = document.getElementById('heroWeatherIcon');
+      const currentTemp = document.getElementById('currentTemp');
+      const currentWeatherDesc = document.getElementById('currentWeatherDesc');
+      const todayMaxTemp = document.getElementById('todayMaxTemp');
+      const todayMinTemp = document.getElementById('todayMinTemp');
+
+      // Metric Elements
+      const uvIndexVal = document.getElementById('uvIndexVal');
+      const uvIndexLevel = document.getElementById('uvIndexLevel');
+      const aqiVal = document.getElementById('aqiVal');
+      const aqiLevel = document.getElementById('aqiLevel');
+      const humidityVal = document.getElementById('humidityVal');
+      const humidityLevel = document.getElementById('humidityLevel');
+      const windSpeedVal = document.getElementById('windSpeedVal');
+      const windLevel = document.getElementById('windLevel');
+
+      // Lists
+      const hourlyForecastList = document.getElementById('hourlyForecastList');
+      const dailyForecastList = document.getElementById('dailyForecastList');
+
+      /**
+       * Show non-intrusive Toast notification
+       */
+      function showToast(text, duration = 3000) {
+        toastMsg.textContent = text;
+        toastMsg.style.display = 'block';
+        setTimeout(() => {
+          toastMsg.style.display = 'none';
+        }, duration);
+      }
+
+      /**
+       * WMO Weather Code Interpreter
+       * Returns: { text: string, type: 'clear' | 'cloudy' | 'rain' | 'thunder' | 'snow' }
+       */
+      function interpretWeatherCode(code) {
+        if (code === 0) return { text: '晴天', type: 'clear' };
+        if (code === 1) return { text: '大致晴朗', type: 'partly-cloudy' };
+        if (code === 2) return { text: '多雲', type: 'cloudy' };
+        if (code === 3) return { text: '陰天', type: 'cloudy' };
+        if (code === 45 || code === 48) return { text: '霧霾', type: 'cloudy' };
+        if (code >= 51 && code <= 55) return { text: '毛毛雨', type: 'rain' };
+        if (code === 56 || code === 57) return { text: '凍雨', type: 'rain' };
+        if (code >= 61 && code <= 65) {
+          if (code === 61) return { text: '短暫小雨', type: 'rain' };
+          if (code === 63) return { text: '陣雨', type: 'rain' };
+          return { text: '大雨', type: 'rain' };
+        }
+        if (code === 66 || code === 67) return { text: '凍雨', type: 'rain' };
+        if (code >= 71 && code <= 77) return { text: '降雪', type: 'snow' };
+        if (code >= 80 && code <= 82) return { text: '局部陣雨', type: 'rain' };
+        if (code === 85 || code === 86) return { text: '陣雪', type: 'snow' };
+        if (code === 95) return { text: '雷陣雨', type: 'thunder' };
+        if (code === 96 || code === 99) return { text: '雷雨伴隨冰雹', type: 'thunder' };
+        return { text: '多雲', type: 'cloudy' };
+      }
+
+      /**
+       * Generate Pure CSS Animated Weather Icon
+       * @param {string} type - 'clear' | 'partly-cloudy' | 'cloudy' | 'rain' | 'thunder' | 'snow'
+       * @param {boolean} isDay - 1 for day, 0 for night
+       * @param {'size-lg' | 'size-sm'} sizeClass
+       */
+      function createCssWeatherIcon(type, isDay = 1, sizeClass = 'size-sm') {
+        const wrapper = document.createElement('div');
+        wrapper.className = `weather-icon-css ${sizeClass}`;
+
+        if (type === 'clear') {
+          if (isDay) {
+            wrapper.innerHTML = `
+              <div class="icon-sun"></div>
+              <div class="icon-sun-rays"></div>
+            `;
+          } else {
+            wrapper.innerHTML = `
+              <div class="icon-moon"></div>
+              <div class="icon-star icon-star-1"></div>
+              <div class="icon-star icon-star-2"></div>
+            `;
+          }
+        } else if (type === 'partly-cloudy') {
+          if (isDay) {
+            wrapper.classList.add('icon-sun-behind-cloud');
+            wrapper.innerHTML = `
+              <div class="icon-sun-mini"></div>
+              <div class="icon-cloud"></div>
+            `;
+          } else {
+            wrapper.innerHTML = `
+              <div class="icon-moon"></div>
+              <div class="icon-cloud" style="top:58%; left:45%; z-index:2;"></div>
+            `;
+          }
+        } else if (type === 'cloudy') {
+          wrapper.innerHTML = `<div class="icon-cloud"></div>`;
+        } else if (type === 'rain') {
+          wrapper.innerHTML = `
+            <div class="icon-rain-cloud"></div>
+            <div class="rain-drop drop-1"></div>
+            <div class="rain-drop drop-2"></div>
+            <div class="rain-drop drop-3"></div>
+          `;
+        } else if (type === 'thunder') {
+          wrapper.innerHTML = `
+            <div class="icon-rain-cloud icon-cloud-dark"></div>
+            <div class="lightning-bolt"></div>
+            <div class="rain-drop drop-1"></div>
+            <div class="rain-drop drop-3"></div>
+          `;
+        } else if (type === 'snow') {
+          wrapper.innerHTML = `
+            <div class="icon-rain-cloud icon-cloud-dark"></div>
+            <div class="snowflake flake-1"></div>
+            <div class="snowflake flake-2"></div>
+            <div class="snowflake flake-3"></div>
+          `;
+        } else {
+          wrapper.innerHTML = `<div class="icon-cloud"></div>`;
+        }
+
+        return wrapper;
+      }
+
+      /**
+       * Update Background Gradient and Text Theme strictly according to PRD:
+       * ☀️ 晴天 (白天)：linear-gradient(135deg, #74ebd5 0%, #9face6 100%)
+       * ☁️ 多雲 (白天/夜晚)：linear-gradient(135deg, #8e9eab 0%, #eef2f3 100%)
+       * 🌧️ 雨天 (白天/夜晚)：linear-gradient(135deg, #2b5876 0%, #4e4376 100%)
+       * 🌙 晴朗 (夜晚)：linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)
+       */
+      function applyTheme(weatherType, isDay) {
+        if (weatherType === 'rain' || weatherType === 'thunder' || weatherType === 'snow') {
+          // 雨天 (白天/夜晚) - 沉穩深灰藍漸層
+          body.style.background = 'linear-gradient(135deg, #2b5876 0%, #4e4376 100%)';
+          body.classList.add('theme-dark');
+        } else if (!isDay && (weatherType === 'clear' || weatherType === 'partly-cloudy')) {
+          // 晴朗 (夜晚) - 深邃星空藍漸層
+          body.style.background = 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)';
+          body.classList.add('theme-dark');
+        } else if (weatherType === 'cloudy' || (!isDay && weatherType === 'cloudy')) {
+          // 多雲 (白天/夜晚) - 柔和灰白漸層
+          body.style.background = 'linear-gradient(135deg, #8e9eab 0%, #eef2f3 100%)';
+          body.classList.remove('theme-dark');
+        } else {
+          // 晴天 (白天) - 清澈天空藍漸層
+          body.style.background = 'linear-gradient(135deg, #74ebd5 0%, #9face6 100%)';
+          body.classList.remove('theme-dark');
+        }
+      }
+
+      /**
+       * Evaluate UV Index description
+       */
+      function getUvDesc(uv) {
+        if (uv === null || uv === undefined || isNaN(uv)) return '正常';
+        if (uv <= 2) return '低量級';
+        if (uv <= 5) return '中量級';
+        if (uv <= 7) return '高量級';
+        if (uv <= 10) return '過量級';
+        return '危險級';
+      }
+
+      /**
+       * Evaluate AQI description
+       */
+      function getAqiDesc(aqi) {
+        if (aqi === null || aqi === undefined || isNaN(aqi)) return '良好';
+        if (aqi <= 50) return '良好 (Good)';
+        if (aqi <= 100) return '普通 (Moderate)';
+        if (aqi <= 150) return '對敏感族群不良';
+        if (aqi <= 200) return '不健康';
+        if (aqi <= 300) return '非常不健康';
+        return '危害';
+      }
+
+      /**
+       * Evaluate Humidity description
+       */
+      function getHumidityDesc(h) {
+        if (h < 40) return '乾燥';
+        if (h <= 70) return '舒適';
+        return '較為潮濕';
+      }
+
+      /**
+       * Evaluate Wind Speed description (Beaufort scale in km/h)
+       */
+      function getWindDesc(speed) {
+        if (speed < 6) return '無風 / 軟風';
+        if (speed < 19) return '微風 (輕和)';
+        if (speed < 38) return '和緩風';
+        if (speed < 61) return '強風 (強勁)';
+        return '疾風 / 烈風';
+      }
+
+      /**
+       * Fetch weather & air quality data from Open-Meteo
+       */
+      async function fetchWeatherData(lat, lon, cityName, countryName) {
+        try {
+          loadingState.style.display = 'flex';
+          weatherView.style.display = 'none';
+
+          // Parallel calls to Weather API & Air Quality API
+          const weatherPromise = fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,is_day,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`
+          ).then(r => r.json());
+
+          const aqiPromise = fetch(
+            `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi,european_aqi,uv_index&timezone=auto`
+          ).then(r => r.json()).catch(() => null);
+
+          const [weatherData, aqiData] = await Promise.all([weatherPromise, aqiPromise]);
+
+          if (!weatherData || !weatherData.current) {
+            throw new Error('無法取得天氣資料');
+          }
+
+          renderWeatherData(weatherData, aqiData, cityName, countryName);
+        } catch (error) {
+          console.error('Fetch error:', error);
+          showToast('天氣資料載入失敗，請稍後再試');
+        } finally {
+          loadingState.style.display = 'none';
+          weatherView.style.display = 'flex';
+        }
+      }
+
+      /**
+       * Render Weather Information into UI
+       */
+      function renderWeatherData(weather, aqi, cityName, countryName) {
+        const current = weather.current;
+        const daily = weather.daily;
+        const hourly = weather.hourly;
+
+        const weatherInfo = interpretWeatherCode(current.weather_code);
+        const isDay = current.is_day === 1;
+
+        // Apply Dynamic Theme Background & Colors
+        applyTheme(weatherInfo.type, isDay);
+
+        // Location text
+        currentCityName.textContent = cityName;
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        currentCountryText.textContent = `${countryName ? countryName + ' · ' : ''}更新於 ${timeStr}`;
+
+        // Hero Weather
+        currentTemp.textContent = Math.round(current.temperature_2m);
+        currentWeatherDesc.textContent = weatherInfo.text;
+
+        heroWeatherIcon.innerHTML = '';
+        heroWeatherIcon.appendChild(createCssWeatherIcon(weatherInfo.type, isDay, 'size-lg'));
+
+        // Today's High & Low
+        if (daily && daily.temperature_2m_max && daily.temperature_2m_max.length > 0) {
+          todayMaxTemp.textContent = Math.round(daily.temperature_2m_max[0]);
+          todayMinTemp.textContent = Math.round(daily.temperature_2m_min[0]);
+        }
+
+        // Secondary Metrics
+        // 1. UV Index
+        let uvVal = aqi?.current?.uv_index ?? 0;
+        uvIndexVal.textContent = typeof uvVal === 'number' ? uvVal.toFixed(1) : '--';
+        uvIndexLevel.textContent = getUvDesc(uvVal);
+
+        // 2. AQI
+        let aqiNum = aqi?.current?.us_aqi ?? aqi?.current?.european_aqi ?? 35;
+        aqiVal.textContent = aqiNum;
+        aqiLevel.textContent = getAqiDesc(aqiNum);
+
+        // 3. Humidity
+        let hum = current.relative_humidity_2m ?? 65;
+        humidityVal.textContent = `${Math.round(hum)}%`;
+        humidityLevel.textContent = getHumidityDesc(hum);
+
+        // 4. Wind Speed
+        let wind = current.wind_speed_10m ?? 0;
+        windSpeedVal.textContent = `${wind.toFixed(1)} km/h`;
+        windLevel.textContent = getWindDesc(wind);
+
+        // Render 6-Hour Forecast
+        renderHourlyForecast(hourly);
+
+        // Render 5-Day Forecast
+        renderDailyForecast(daily);
+      }
+
+      /**
+       * Render 6-Hour Forecast
+       */
+      function renderHourlyForecast(hourly) {
+        hourlyForecastList.innerHTML = '';
+        if (!hourly || !hourly.time) return;
+
+        const now = new Date();
+        const currentIsoHour = now.toISOString().slice(0, 13); // "2026-10-18T14"
+        
+        let startIndex = 0;
+        // Find current or nearest hour index
+        for (let i = 0; i < hourly.time.length; i++) {
+          if (hourly.time[i] >= currentIsoHour) {
+            startIndex = i;
+            break;
+          }
+        }
+
+        // Display next 6 hours
+        for (let i = startIndex; i < Math.min(startIndex + 6, hourly.time.length); i++) {
+          const itemTime = new Date(hourly.time[i]);
+          const hourLabel = (i === startIndex) ? '現在' : `${String(itemTime.getHours()).padStart(2, '0')}:00`;
+          const temp = Math.round(hourly.temperature_2m[i]);
+          const code = hourly.weather_code[i];
+          const itemInfo = interpretWeatherCode(code);
+          const itemIsDay = (itemTime.getHours() >= 6 && itemTime.getHours() < 18) ? 1 : 0;
+
+          const card = document.createElement('div');
+          card.className = 'hourly-item';
+
+          const timeSpan = document.createElement('span');
+          timeSpan.className = 'hourly-time';
+          timeSpan.textContent = hourLabel;
+
+          const iconNode = createCssWeatherIcon(itemInfo.type, itemIsDay, 'size-sm');
+
+          const tempSpan = document.createElement('span');
+          tempSpan.className = 'hourly-temp';
+          tempSpan.textContent = `${temp}°`;
+
+          card.appendChild(timeSpan);
+          card.appendChild(iconNode);
+          card.appendChild(tempSpan);
+
+          hourlyForecastList.appendChild(card);
+        }
+      }
+
+      /**
+       * Render 5-Day Forecast
+       */
+      function renderDailyForecast(daily) {
+        dailyForecastList.innerHTML = '';
+        if (!daily || !daily.time) return;
+
+        const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+        // Up to 5 days
+        const count = Math.min(5, daily.time.length);
+        for (let i = 0; i < count; i++) {
+          const date = new Date(daily.time[i]);
+          const dayName = i === 0 ? '今天' : weekDays[date.getDay()];
+          const code = daily.weather_code[i];
+          const info = interpretWeatherCode(code);
+          const maxT = Math.round(daily.temperature_2m_max[i]);
+          const minT = Math.round(daily.temperature_2m_min[i]);
+
+          const row = document.createElement('div');
+          row.className = 'daily-item';
+
+          const dayLabel = document.createElement('div');
+          dayLabel.className = 'daily-day';
+          dayLabel.textContent = dayName;
+
+          const conditionBox = document.createElement('div');
+          conditionBox.className = 'daily-condition';
+          conditionBox.appendChild(createCssWeatherIcon(info.type, 1, 'size-sm'));
+          const descSpan = document.createElement('span');
+          descSpan.textContent = info.text;
+          conditionBox.appendChild(descSpan);
+
+          const tempsBox = document.createElement('div');
+          tempsBox.className = 'daily-temps';
+          tempsBox.innerHTML = `
+            <span class="daily-high">${maxT}°</span>
+            <span class="daily-low">${minT}°</span>
+          `;
+
+          row.appendChild(dayLabel);
+          row.appendChild(conditionBox);
+          row.appendChild(tempsBox);
+
+          dailyForecastList.appendChild(row);
+        }
+      }
+
+      /**
+       * Autocomplete & City Search via Open-Meteo Geocoding API
+       */
+      async function searchCity(query) {
+        if (!query || query.trim().length === 0) {
+          searchResults.classList.remove('active');
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query.trim())}&count=5&language=zh&format=json`
+          );
+          const data = await res.json();
+
+          if (data && data.results && data.results.length > 0) {
+            renderSearchResults(data.results);
+          } else {
+            searchResults.innerHTML = `<div class="result-item" style="cursor: default; color: var(--text-secondary);">查無「${query}」城市，請檢查拼寫</div>`;
+            searchResults.classList.add('active');
+          }
+        } catch (e) {
+          console.error('Geocoding search failed:', e);
+        }
+      }
+
+      /**
+       * Render Search Dropdown results
+       */
+      function renderSearchResults(results) {
+        searchResults.innerHTML = '';
+        results.forEach(item => {
+          const el = document.createElement('div');
+          el.className = 'result-item';
+
+          const nameDiv = document.createElement('div');
+          nameDiv.style.fontWeight = '600';
+          nameDiv.textContent = item.name;
+
+          const region = [item.admin1, item.country].filter(Boolean).join(', ');
+          const countrySpan = document.createElement('div');
+          countrySpan.className = 'result-country';
+          countrySpan.textContent = region;
+
+          el.appendChild(nameDiv);
+          el.appendChild(countrySpan);
+
+          el.addEventListener('click', () => {
+            selectCity(item.name, region, item.latitude, item.longitude);
+          });
+
+          searchResults.appendChild(el);
+        });
+
+        searchResults.classList.add('active');
+      }
+
+      /**
+       * Choose a city and load its weather
+       */
+      function selectCity(name, country, lat, lon) {
+        searchResults.classList.remove('active');
+        citySearchInput.value = '';
+        currentLocation = { name, country, latitude: lat, longitude: lon };
+        fetchWeatherData(lat, lon, name, country);
+      }
+
+      /**
+       * Execute search for current text in input
+       */
+      async function triggerSearch() {
+        const query = citySearchInput.value.trim();
+        if (!query) return;
+
+        try {
+          loadingState.style.display = 'flex';
+          const res = await fetch(
+            `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=zh&format=json`
+          );
+          const data = await res.json();
+          if (data && data.results && data.results.length > 0) {
+            const top = data.results[0];
+            const region = [top.admin1, top.country].filter(Boolean).join(', ');
+            selectCity(top.name, region, top.latitude, top.longitude);
+          } else {
+            showToast(`找不到「${query}」的天氣資料`);
+            loadingState.style.display = 'none';
+            weatherView.style.display = 'flex';
+          }
+        } catch (err) {
+          showToast('搜尋失敗，請檢查網路連線');
+          loadingState.style.display = 'none';
+          weatherView.style.display = 'flex';
+        }
+      }
+
+      /**
+       * Geolocation workflow (User flow step 1)
+       */
+      function initGeolocation() {
+        if (!navigator.geolocation) {
+          console.warn('Geolocation not supported by browser.');
+          fallbackToDefault('瀏覽器未支援定位，已切換至預設城市');
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            let resolvedName = '目前所在位置';
+            let resolvedCountry = '';
+
+            // Attempt to reverse geocode coordinate to human-friendly name
+            try {
+              const geoRes = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=zh-TW`,
+                { headers: { 'User-Agent': 'DailyWeatherApp/1.0' } }
+              );
+              if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                if (geoData && geoData.address) {
+                  const addr = geoData.address;
+                  resolvedName = addr.city || addr.town || addr.county || addr.district || '目前所在位置';
+                  resolvedCountry = addr.country || '當地';
+                }
+              }
+            } catch (e) {
+              // Gracefully keep '目前所在位置'
+            }
+
+            selectCity(resolvedName, resolvedCountry, lat, lon);
+          },
+          (err) => {
+            console.warn('Geolocation denied or failed:', err.message);
+            fallbackToDefault('已載入預設城市：台北市');
+          },
+          { timeout: 8000, enableHighAccuracy: true }
+        );
+      }
+
+      function fallbackToDefault(msg) {
+        showToast(msg);
+        selectCity(
+          DEFAULT_LOCATION.name,
+          DEFAULT_LOCATION.country,
+          DEFAULT_LOCATION.latitude,
+          DEFAULT_LOCATION.longitude
+        );
+      }
+
+      // Event Listeners
+      citySearchInput.addEventListener('input', (e) => {
+        clearTimeout(searchDebounceTimer);
+        const q = e.target.value.trim();
+        if (q.length >= 1) {
+          searchDebounceTimer = setTimeout(() => searchCity(q), 350);
+        } else {
+          searchResults.classList.remove('active');
+        }
+      });
+
+      citySearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          triggerSearch();
+        }
+      });
+
+      searchBtn.addEventListener('click', () => {
+        triggerSearch();
+      });
+
+      locationBtn.addEventListener('click', () => {
+        showToast('正在偵測您的所在位置...');
+        initGeolocation();
+      });
+
+      // Close search suggestions on clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-wrapper')) {
+          searchResults.classList.remove('active');
+        }
+      });
+
+      // Quick City Chips Click
+      document.querySelectorAll('.quick-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const city = btn.dataset.city;
+          const lat = parseFloat(btn.dataset.lat);
+          const lon = parseFloat(btn.dataset.lon);
+          selectCity(city, '', lat, lon);
+        });
+      });
+
+      // Kick off on page load (User Flow: 載入與授權)
+      initGeolocation();
+    })();
+  </script>
+</body>
+</html>
